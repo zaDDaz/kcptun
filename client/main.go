@@ -76,20 +76,25 @@ func NewTunnel(key string, p1, p2 net.Conn) *Tunnel {
 
 // Open establishes bi-directional communcation of p1,p2
 func (t *Tunnel) Open() {
-	die := make(chan bool, 2)
+	p1die := make(chan struct{})
 	go func() {
 		n, err := io.Copy(t.p1, t.p2)
 		log.Println("from p1 -> p2 written:", n, "error:", err)
-		die <- true
+		close(p1die)
 	}()
 
+	p2die := make(chan struct{})
 	go func() {
 		n, err := io.Copy(t.p2, t.p1)
 		log.Println("from p2 -> p1 written:", n, "error:", err)
-		die <- true
+		close(p2die)
 	}()
 
-	<-die
+	// wait for tunnel termination
+	select {
+	case <-p1die:
+	case <-p2die:
+	}
 }
 
 func main() {
