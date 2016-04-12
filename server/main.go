@@ -3,33 +3,60 @@ package main
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"io"
 	"log"
-	"math/rand"
 	"net"
 	"os"
-	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/xtaci/kcp-go"
 )
 
-const (
-	BUFSIZ = 65536
-)
-
 var (
-	ch_buf chan []byte
-	iv     []byte = []byte{147, 243, 201, 109, 83, 207, 190, 153, 204, 106, 86, 122, 71, 135, 200, 20}
+	iv = []byte{147, 243, 201, 109, 83, 207, 190, 153, 204, 106, 86, 122, 71, 135, 200, 20}
 )
 
-func init() {
-	ch_buf = make(chan []byte, 1024)
-	go func() {
-		for {
-			ch_buf <- make([]byte, BUFSIZ)
-		}
-	}()
-	rand.Seed(time.Now().UnixNano())
+type secureConn struct {
+	encoder cipher.Stream
+	decoder cipher.Stream
+	conn    net.Conn
+}
+
+func newSecureConn(key string, conn net.Conn) *secureConn {
+	sc := new(secureConn)
+	sc.conn = conn
+	commkey := make([]byte, 32)
+	copy(commkey, []byte(key))
+
+	// encoder
+	block, err := aes.NewCipher(commkey)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	sc.encoder = cipher.NewCTR(block, iv)
+
+	// decoder
+	block, err = aes.NewCipher(commkey)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	sc.decoder = cipher.NewCTR(block, iv)
+	return sc
+}
+
+func (sc *secureConn) Read(p []byte) (n int, err error) {
+	n, err = sc.conn.Read(p)
+	if err == nil {
+		sc.decoder.XORKeyStream(p[:n], p[:n])
+	}
+	return
+}
+
+func (sc *secureConn) Write(p []byte) (n int, err error) {
+	sc.encoder.XORKeyStream(p, p)
+	return sc.conn.Write(p)
 }
 
 func main() {
@@ -73,128 +100,43 @@ func main() {
 	myApp.Run(os.Args)
 }
 
-func peer(conn net.Conn, sess_die chan struct{}, key string) chan []byte {
-	ch := make(chan []byte, 1024)
-	go func() {
-		defer func() {
-			close(ch)
-		}()
+func handleClient(kcpconn net.Conn, target string, key string) {
+	log.Println("stream opened")
+	defer log.Println("stream closed")
 
-		//decoder
-		commkey := make([]byte, 32)
-		copy(commkey, []byte(key))
-		block, err := aes.NewCipher(commkey)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		decoder := cipher.NewCTR(block, iv)
+	// p1
+	p1 := newSecureConn(key, kcpconn)
+	defer kcpconn.Close()
 
-		for {
-			conn.SetReadDeadline(time.Now().Add(2 * time.Minute))
-			bts := <-ch_buf
-			if n, err := conn.Read(bts); err == nil {
-				bts = bts[:n]
-				decoder.XORKeyStream(bts, bts)
-			} else {
-				log.Println(err)
-				return
-			}
-
-			select {
-			case ch <- bts:
-			case <-sess_die:
-				return
-			}
-		}
-	}()
-	return ch
-}
-
-func endpoint(sess_die chan struct{}, target string, key string) (net.Conn, <-chan []byte) {
-	conn, err := net.Dial("tcp", target)
+	// p2
+	p2, err := net.Dial("tcp", target)
 	if err != nil {
 		log.Println(err)
-		return nil, nil
-	}
-
-	if tcpconn, ok := conn.(*net.TCPConn); ok {
-		tcpconn.SetNoDelay(false)
-	} else {
-		log.Println("not tcp connection")
-	}
-
-	ch := make(chan []byte, 1024)
-	go func() {
-		defer func() {
-			close(ch)
-		}()
-
-		// encoder
-		commkey := make([]byte, 32)
-		copy(commkey, []byte(key))
-		block, err := aes.NewCipher(commkey)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		encoder := cipher.NewCTR(block, iv)
-
-		for {
-			bts := <-ch_buf
-			n, err := conn.Read(bts)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-
-			bts = bts[:n]
-			encoder.XORKeyStream(bts, bts)
-			select {
-			case ch <- bts:
-			case <-sess_die:
-				return
-			}
-		}
-	}()
-	return conn, ch
-}
-
-func handleClient(conn net.Conn, target string, key string) {
-	log.Println("stream open")
-	defer log.Println("stream close")
-	sess_die := make(chan struct{})
-	defer func() {
-		close(sess_die)
-		conn.Close()
-	}()
-
-	////
-	ch_peer := peer(conn, sess_die, key)
-	conn_ep, ch_ep := endpoint(sess_die, target, key)
-	if conn_ep == nil {
 		return
 	}
-	defer conn_ep.Close()
+	if tcpconn, ok := p2.(*net.TCPConn); ok {
+		tcpconn.SetNoDelay(false)
+	}
+	defer p2.Close()
 
-	for {
-		select {
-		case bts, ok := <-ch_peer:
-			if !ok {
-				return
-			}
-			if _, err := conn_ep.Write(bts); err != nil {
-				log.Println(err)
-				return
-			}
-		case bts, ok := <-ch_ep:
-			if !ok {
-				return
-			}
-			if _, err := conn.Write(bts); err != nil {
-				log.Println(err)
-				return
-			}
-		}
+	// start tunnel
+	p1die := make(chan struct{})
+	go func() {
+		n, err := io.Copy(p1, p2)
+		log.Println("from p2 -> p1 written:", n, "error:", err)
+		close(p1die)
+	}()
+
+	p2die := make(chan struct{})
+	go func() {
+		n, err := io.Copy(p2, p1)
+		log.Println("from p1 -> p2 written:", n, "error:", err)
+		close(p2die)
+	}()
+
+	// wait for tunnel termination
+	select {
+	case <-p1die:
+	case <-p2die:
 	}
 }

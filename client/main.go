@@ -13,18 +13,17 @@ import (
 )
 
 var (
-	ch_buf chan []byte
-	iv     []byte = []byte{147, 243, 201, 109, 83, 207, 190, 153, 204, 106, 86, 122, 71, 135, 200, 20}
+	iv = []byte{147, 243, 201, 109, 83, 207, 190, 153, 204, 106, 86, 122, 71, 135, 200, 20}
 )
 
-type SecureConn struct {
+type secureConn struct {
 	encoder cipher.Stream
 	decoder cipher.Stream
 	conn    net.Conn
 }
 
-func NewSecureConn(key string, conn net.Conn) *SecureConn {
-	sc := new(SecureConn)
+func newSecureConn(key string, conn net.Conn) *secureConn {
+	sc := new(secureConn)
 	sc.conn = conn
 	commkey := make([]byte, 32)
 	copy(commkey, []byte(key))
@@ -47,7 +46,7 @@ func NewSecureConn(key string, conn net.Conn) *SecureConn {
 	return sc
 }
 
-func (sc *SecureConn) Read(p []byte) (n int, err error) {
+func (sc *secureConn) Read(p []byte) (n int, err error) {
 	n, err = sc.conn.Read(p)
 	if err == nil {
 		sc.decoder.XORKeyStream(p[:n], p[:n])
@@ -55,38 +54,42 @@ func (sc *SecureConn) Read(p []byte) (n int, err error) {
 	return
 }
 
-func (sc *SecureConn) Write(p []byte) (n int, err error) {
+func (sc *secureConn) Write(p []byte) (n int, err error) {
 	sc.encoder.XORKeyStream(p, p)
 	return sc.conn.Write(p)
 }
 
-type Tunnel struct {
-	die chan struct{}
-	p1  *SecureConn
-	p2  *SecureConn
-}
+func handleClient(p1 *net.TCPConn, remote string, key string) {
+	log.Println("stream opened")
+	defer log.Println("stream closed")
 
-func NewTunnel(key string, p1, p2 net.Conn) *Tunnel {
-	t := new(Tunnel)
-	t.die = make(chan struct{})
-	t.p1 = NewSecureConn(key, p1)
-	t.p2 = NewSecureConn(key, p2)
-	return t
-}
+	// p1
+	p1.SetNoDelay(false)
+	defer p1.Close()
 
-// Open establishes bi-directional communcation of p1,p2
-func (t *Tunnel) Open() {
+	// connect to kcp server
+	kcpserver, err := kcp.DialEncrypted(kcp.MODE_FAST, remote, key)
+	kcpserver.SetWindowSize(128, 1024)
+	if err != nil {
+		log.Println(err)
+	}
+	defer kcpserver.Close()
+
+	// p2
+	p2 := newSecureConn(key, kcpserver)
+
+	// start tunnel
 	p1die := make(chan struct{})
 	go func() {
-		n, err := io.Copy(t.p1, t.p2)
-		log.Println("from p1 -> p2 written:", n, "error:", err)
+		n, err := io.Copy(p1, p2)
+		log.Println("from p2 -> p1 written:", n, "error:", err)
 		close(p1die)
 	}()
 
 	p2die := make(chan struct{})
 	go func() {
-		n, err := io.Copy(t.p2, t.p1)
-		log.Println("from p2 -> p1 written:", n, "error:", err)
+		n, err := io.Copy(p2, p1)
+		log.Println("from p1 -> p2 written:", n, "error:", err)
 		close(p2die)
 	}()
 
@@ -94,6 +97,13 @@ func (t *Tunnel) Open() {
 	select {
 	case <-p1die:
 	case <-p2die:
+	}
+}
+
+func checkError(err error) {
+	if err != nil {
+		log.Println(err)
+		os.Exit(-1)
 	}
 }
 
@@ -135,31 +145,4 @@ func main() {
 		}
 	}
 	myApp.Run(os.Args)
-}
-
-func handleClient(p1 *net.TCPConn, remote string, key string) {
-	log.Println("stream opened")
-	defer log.Println("stream closed")
-
-	// p1
-	p1.SetNoDelay(false)
-	defer p1.Close()
-
-	// p2
-	p2, err := kcp.DialEncrypted(kcp.MODE_FAST, remote, key)
-	p2.SetWindowSize(128, 1024)
-	if err != nil {
-		log.Println(err)
-	}
-	defer p2.Close()
-
-	t := NewTunnel(key, p1, p2)
-	t.Open()
-}
-
-func checkError(err error) {
-	if err != nil {
-		log.Println(err)
-		os.Exit(-1)
-	}
 }
