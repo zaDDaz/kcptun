@@ -108,19 +108,16 @@ func handleClient(kcpconn net.Conn, target string, key string) {
 	p1 := newSecureConn(key, kcpconn)
 	defer kcpconn.Close()
 
-	// connect to target server
-	conn, err := net.Dial("tcp", target)
+	// p2
+	p2, err := net.Dial("tcp", target)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	if tcpconn, ok := conn.(*net.TCPConn); ok {
+	if tcpconn, ok := p2.(*net.TCPConn); ok {
 		tcpconn.SetNoDelay(false)
 	}
-	defer conn.Close()
-
-	// p2
-	p2 := newSecureConn(key, conn)
+	defer p2.Close()
 
 	// start tunnel
 	p1die := make(chan struct{})

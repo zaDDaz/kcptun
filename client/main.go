@@ -82,14 +82,14 @@ func handleClient(p1 *net.TCPConn, remote string, key string) {
 	p1die := make(chan struct{})
 	go func() {
 		n, err := io.Copy(p1, p2)
-		log.Println("from p1 -> p2 written:", n, "error:", err)
+		log.Println("from p2 -> p1 written:", n, "error:", err)
 		close(p1die)
 	}()
 
 	p2die := make(chan struct{})
 	go func() {
 		n, err := io.Copy(p2, p1)
-		log.Println("from p2 -> p1 written:", n, "error:", err)
+		log.Println("from p1 -> p2 written:", n, "error:", err)
 		close(p2die)
 	}()
 
