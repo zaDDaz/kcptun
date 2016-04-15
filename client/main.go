@@ -64,7 +64,6 @@ func handleClient(p1 *net.TCPConn, remote string, key string) {
 	defer log.Println("stream closed")
 
 	// p1
-	p1.SetNoDelay(false)
 	defer p1.Close()
 
 	// connect to kcp server

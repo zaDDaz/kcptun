@@ -114,9 +114,6 @@ func handleClient(kcpconn net.Conn, target string, key string) {
 		log.Println(err)
 		return
 	}
-	if tcpconn, ok := p2.(*net.TCPConn); ok {
-		tcpconn.SetNoDelay(false)
-	}
 	defer p2.Close()
 
 	// start tunnel
