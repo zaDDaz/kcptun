@@ -34,7 +34,7 @@ func newSecureConn(key string, conn net.Conn) *secureConn {
 		log.Println(err)
 		return nil
 	}
-	sc.encoder = cipher.NewCTR(block, iv)
+	sc.encoder = cipher.NewCFBEncrypter(block, iv)
 
 	// decoder
 	block, err = aes.NewCipher(commkey)
@@ -42,7 +42,7 @@ func newSecureConn(key string, conn net.Conn) *secureConn {
 		log.Println(err)
 		return nil
 	}
-	sc.decoder = cipher.NewCTR(block, iv)
+	sc.decoder = cipher.NewCFBDecrypter(block, iv)
 	return sc
 }
 
