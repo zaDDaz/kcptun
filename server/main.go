@@ -5,8 +5,10 @@ import (
 	"crypto/cipher"
 	"io"
 	"log"
+	"math/rand"
 	"net"
 	"os"
+	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/xtaci/kcp-go"
@@ -60,6 +62,7 @@ func (sc *secureConn) Write(p []byte) (n int, err error) {
 }
 
 func main() {
+	rand.Seed(int64(time.Now().Nanosecond()))
 	myApp := cli.NewApp()
 	myApp.Name = "kcptun"
 	myApp.Usage = "kcptun server"
