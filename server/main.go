@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/sha256"
 	"io"
 	"log"
 	"math/rand"
@@ -27,11 +28,10 @@ type secureConn struct {
 func newSecureConn(key string, conn net.Conn) *secureConn {
 	sc := new(secureConn)
 	sc.conn = conn
-	commkey := make([]byte, 32)
-	copy(commkey, []byte(key))
+	commkey := sha256.Sum256([]byte(key))
 
 	// encoder
-	block, err := aes.NewCipher(commkey)
+	block, err := aes.NewCipher(commkey[:])
 	if err != nil {
 		log.Println(err)
 		return nil
@@ -39,7 +39,7 @@ func newSecureConn(key string, conn net.Conn) *secureConn {
 	sc.encoder = cipher.NewCFBEncrypter(block, iv)
 
 	// decoder
-	block, err = aes.NewCipher(commkey)
+	block, err = aes.NewCipher(commkey[:])
 	if err != nil {
 		log.Println(err)
 		return nil
