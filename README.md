@@ -18,7 +18,7 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
  
 # 特性      
 1. 采用高安全性AES-256-CFB加密             
-2. UDP数据包一次一密(OTP)，无特征，防运营商深度检测       
+2. UDP数据包一次一密(OTP)，无特征，防非法深度检测       
 3. 消息摘要采用MD5，杜绝非法串改      
 3. kcptun客户端和服务端分别只有一个main.go文件，易于使用      
 4. 核心基于[kcp-go](https://github.com/xtaci/kcp-go)      
@@ -26,7 +26,7 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 ### 适用范围（包括但不限于）:           
 1. 网络游戏的数据传输        
 2. 跨运营商的流量传输               
-3. 其他高丢包通信环境的TCP数据传输      
+3. 其他高丢包，高干扰通信环境的TCP数据传输      
 
 # 防火墙
 注意，请确保默认服务器端UDP端口 ```29900``` 开启，防火墙允许UDP包通过。   (端口可以通过命令行参数调整，不要忘记修改对应的防火墙规则。)
@@ -49,7 +49,7 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 
 5. 浏览器就可以连接12948端口进行socks5代理访问了。   // 默认kcp client的端口是12948
 
-**注意：这个例子是为了让你快速上手，正确的姿势应该是在客户端开启ssh -D，详见 使用案例和https://github.com/xtaci/kcptun/issues/6**
+**注意：这个例子是为了让你快速上手，正确的姿势应该是在客户端开启ssh -D，详见https://github.com/xtaci/kcptun/issues/6**
 
 # 特别注意
 一对kcp c/s 最好只承载一条tcp connection，这是kcptun的最佳工作方式
@@ -62,11 +62,6 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 ## 安装命令
 1. 服务端: ```go get github.com/xtaci/kcptun/server;  server```        
 2. 客户端: ```go get github.com/xtaci/kcptun/client;  client```      
-
-# 使用案例
-1. openvpn client -> kcptun client -> kcptun server -> openvpn server (最佳实践)
-2. ssh tunnel client -> kcptun client -> kcptun server -> sshd (推荐应用)
-3. browser socks5 -> kcptun client -> kcptun server -> ssh -D socks5 server (简易)
 
 # 常见问题
 Q: client/server都启动了，但无法传输数据，服务器显示了stream open        
@@ -93,4 +88,4 @@ https://github.com/xtaci/kcptun/issues/2
 
 # 免责申明
 用户以各种方式使用本软件（包括但不限于修改使用、直接使用、通过第三方使用）的过程中，不得以任何方式利用本软件直接或间接从事违反中国法律、以及社会公德的行为。         
-对免责声明的解释、修改及更新权均属于@xtaci所有。
+对免责声明的解释、修改及更新权均属于作者本人所有。
