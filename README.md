@@ -74,11 +74,6 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 
 5. 浏览器就可以连接12948端口进行socks5代理访问了。   // 默认kcp client的端口是12948
 
-**注意：这个例子是为了让你快速上手，正确的姿势应该是在客户端开启ssh -D，详见https://github.com/xtaci/kcptun/issues/6**
-
-# 特别注意
-一对kcp c/s 最好只承载一条tcp connection，这是kcptun的最佳工作方式
-
 # 从源码的安装
 ## 预备条件:       
 1. 安装好```golang```       
