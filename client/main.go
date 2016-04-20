@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/codegangsta/cli"
+	"github.com/hashicorp/yamux"
 	"github.com/xtaci/kcp-go"
 )
 
@@ -61,24 +62,15 @@ func (sc *secureConn) Write(p []byte) (n int, err error) {
 	return sc.conn.Write(p)
 }
 
-func handleClient(p1 *net.TCPConn, remote string, key string) {
+func (sc *secureConn) Close() (err error) {
+	return sc.conn.Close()
+}
+
+func handleClient(p1, p2 net.Conn) {
 	log.Println("stream opened")
 	defer log.Println("stream closed")
-
-	// p1
-	p1.SetNoDelay(false)
 	defer p1.Close()
-
-	// connect to kcp server
-	kcpserver, err := kcp.DialEncrypted(kcp.MODE_FAST, remote, key)
-	kcpserver.SetWindowSize(128, 1024)
-	if err != nil {
-		log.Println(err)
-	}
-	defer kcpserver.Close()
-
-	// p2
-	p2 := newSecureConn(key, kcpserver)
+	defer p2.Close()
 
 	// start tunnel
 	p1die := make(chan struct{})
@@ -138,13 +130,30 @@ func main() {
 		listener, err := net.ListenTCP("tcp", addr)
 		checkError(err)
 		log.Println("listening on:", listener.Addr())
+
+		// kcp server
+		kcpserver, err := kcp.DialEncrypted(kcp.MODE_FAST, c.String("remoteaddr"), c.String("key"))
+		kcpserver.SetWindowSize(128, 1024)
+		checkError(err)
+		defer kcpserver.Close()
+
+		// stream multiplex
+		scon := newSecureConn(c.String("key"), kcpserver)
+		session, err := yamux.Client(scon, nil)
+		checkError(err)
+
 		for {
-			conn, err := listener.AcceptTCP()
+			p1, err := listener.AcceptTCP()
 			if err != nil {
-				log.Println("accept failed:", err)
+				log.Println(err)
 				continue
 			}
-			go handleClient(conn, c.String("remoteaddr"), c.String("key"))
+			p2, err := session.Open()
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			go handleClient(p1, p2)
 		}
 	}
 	myApp.Run(os.Args)
