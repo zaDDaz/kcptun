@@ -22,6 +22,7 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 3. 消息摘要采用MD5，杜绝非法篡改      
 4. kcptun客户端和服务端分别只有一个main.go文件，易于使用      
 5. 核心基于[kcp-go](https://github.com/xtaci/kcp-go)      
+6. 基于[yamux](https://github.com/hashicorp/yamux) 的多路流复用( N:1 ------ > 1:N)
 
 加密流程：         
 ```
@@ -66,7 +67,7 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 
 1. 假定服务器IP为:```xxx.xxx.xxx.xxx```
 
-2. 在服务器端开启ssh -D     (监听127.0.0.1:8080端口)
+2. 在服务器端开启ssh -D     (监听127.0.0.1:8080端口，你可以在服务器端启动任意的socks代理监听)
 ```ssh -D 127.0.0.1:8080 ubuntu@localhost```   
 
 3. 在服务器启动kcp server:     
