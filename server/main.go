@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/codegangsta/cli"
+	"github.com/hashicorp/yamux"
 	"github.com/xtaci/kcp-go"
 )
 
@@ -61,6 +62,10 @@ func (sc *secureConn) Write(p []byte) (n int, err error) {
 	return sc.conn.Write(p)
 }
 
+func (sc *secureConn) Close() (err error) {
+	return sc.conn.Close()
+}
+
 func main() {
 	rand.Seed(int64(time.Now().Nanosecond()))
 	myApp := cli.NewApp()
@@ -94,7 +99,14 @@ func main() {
 		for {
 			if conn, err := lis.Accept(); err == nil {
 				conn.SetWindowSize(1024, 128)
-				go handleClient(conn, c.String("target"), c.String("key"))
+				// p1
+				p1 := newSecureConn(c.String("key"), conn)
+				mux, err := yamux.Server(p1, nil)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				go handleMux(mux, c.String("target"))
 			} else {
 				log.Println(err)
 			}
@@ -103,13 +115,20 @@ func main() {
 	myApp.Run(os.Args)
 }
 
-func handleClient(kcpconn net.Conn, target string, key string) {
+func handleMux(sess *yamux.Session, target string) {
+	for {
+		stream, err := sess.Accept()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		go handleClient(stream, target)
+	}
+}
+
+func handleClient(p1 net.Conn, target string) {
 	log.Println("stream opened")
 	defer log.Println("stream closed")
-
-	// p1
-	p1 := newSecureConn(key, kcpconn)
-	defer kcpconn.Close()
 
 	// p2
 	p2, err := net.Dial("tcp", target)
