@@ -1,6 +1,6 @@
 #!/bin/sh
 
-gox github.com/xtaci/kcptun/client github.com/xtaci/kcptun/server
+gox -os "darwin linux windows" github.com/xtaci/kcptun/client github.com/xtaci/kcptun/server
 tar -zcf kcptun-linux-x86.tar.gz client_linux_386 server_linux_386
 tar -zcf kcptun-darwin-x86.tar.gz client_darwin_386 server_darwin_386
 tar -zcf kcptun-windows-x86.tar.gz client_windows_386.exe server_windows_386.exe
