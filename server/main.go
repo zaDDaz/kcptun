@@ -118,6 +118,7 @@ func main() {
 }
 
 func handleMux(sess *yamux.Session, target string) {
+	defer sess.Close()
 	for {
 		stream, err := sess.Accept()
 		if err != nil {
