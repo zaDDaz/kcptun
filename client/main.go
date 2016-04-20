@@ -133,8 +133,8 @@ func main() {
 
 		// kcp server
 		kcpserver, err := kcp.DialEncrypted(kcp.MODE_FAST, c.String("remoteaddr"), c.String("key"))
-		kcpserver.SetWindowSize(128, 1024)
 		checkError(err)
+		kcpserver.SetWindowSize(128, 1024)
 		defer kcpserver.Close()
 
 		// stream multiplex
