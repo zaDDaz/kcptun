@@ -90,6 +90,7 @@ func main() {
 		},
 	}
 	myApp.Action = func(c *cli.Context) {
+		// KCP listen
 		lis, err := kcp.ListenEncrypted(kcp.MODE_FAST, c.String("listen"), c.String("key"))
 		if err != nil {
 			log.Fatal(err)
@@ -98,14 +99,15 @@ func main() {
 		log.Println("listening on ", lis.Addr())
 		for {
 			if conn, err := lis.Accept(); err == nil {
+				// stream multiplex
 				conn.SetWindowSize(1024, 128)
-				// p1
-				p1 := newSecureConn(c.String("key"), conn)
-				mux, err := yamux.Server(p1, nil)
+				scon := newSecureConn(c.String("key"), conn)
+				mux, err := yamux.Server(scon, nil)
 				if err != nil {
 					log.Println(err)
 					continue
 				}
+				// handle multiplex-ed connection
 				go handleMux(mux, c.String("target"))
 			} else {
 				log.Println(err)
@@ -135,9 +137,6 @@ func handleClient(p1 net.Conn, target string) {
 	if err != nil {
 		log.Println(err)
 		return
-	}
-	if tcpconn, ok := p2.(*net.TCPConn); ok {
-		tcpconn.SetNoDelay(false)
 	}
 	defer p2.Close()
 

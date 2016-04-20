@@ -131,11 +131,13 @@ func main() {
 		checkError(err)
 		log.Println("listening on:", listener.Addr())
 
-		// connect to kcp server
+		// kcp server
 		kcpserver, err := kcp.DialEncrypted(kcp.MODE_FAST, c.String("remoteaddr"), c.String("key"))
 		kcpserver.SetWindowSize(128, 1024)
 		checkError(err)
 		defer kcpserver.Close()
+
+		// stream multiplex
 		scon := newSecureConn(c.String("key"), kcpserver)
 		session, err := yamux.Client(scon, nil)
 		checkError(err)
@@ -146,7 +148,6 @@ func main() {
 				log.Println(err)
 				continue
 			}
-			p1.SetNoDelay(false)
 			p2, err := session.Open()
 			if err != nil {
 				log.Println(err)
