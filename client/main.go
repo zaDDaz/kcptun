@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	crand "crypto/rand"
 	"crypto/sha256"
 	"io"
 	"log"
@@ -16,17 +17,13 @@ import (
 	"github.com/xtaci/kcp-go"
 )
 
-var (
-	iv = []byte{147, 243, 201, 109, 83, 207, 190, 153, 204, 106, 86, 122, 71, 135, 200, 20}
-)
-
 type secureConn struct {
 	encoder cipher.Stream
 	decoder cipher.Stream
 	conn    net.Conn
 }
 
-func newSecureConn(key string, conn net.Conn) *secureConn {
+func newSecureConn(key string, conn net.Conn, iv []byte) *secureConn {
 	sc := new(secureConn)
 	sc.conn = conn
 	commkey := sha256.Sum256([]byte(key))
@@ -137,8 +134,14 @@ func main() {
 		kcpserver.SetWindowSize(128, 1024)
 		defer kcpserver.Close()
 
+		// generate & send iv
+		iv := make([]byte, aes.BlockSize)
+		io.ReadFull(crand.Reader, iv)
+		_, err = kcpserver.Write(iv)
+		checkError(err)
+
 		// stream multiplex
-		scon := newSecureConn(c.String("key"), kcpserver)
+		scon := newSecureConn(c.String("key"), kcpserver, iv)
 		session, err := yamux.Client(scon, nil)
 		checkError(err)
 

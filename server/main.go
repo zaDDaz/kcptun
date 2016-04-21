@@ -16,17 +16,13 @@ import (
 	"github.com/xtaci/kcp-go"
 )
 
-var (
-	iv = []byte{147, 243, 201, 109, 83, 207, 190, 153, 204, 106, 86, 122, 71, 135, 200, 20}
-)
-
 type secureConn struct {
 	encoder cipher.Stream
 	decoder cipher.Stream
 	conn    net.Conn
 }
 
-func newSecureConn(key string, conn net.Conn) *secureConn {
+func newSecureConn(key string, conn net.Conn, iv []byte) *secureConn {
 	sc := new(secureConn)
 	sc.conn = conn
 	commkey := sha256.Sum256([]byte(key))
@@ -99,16 +95,7 @@ func main() {
 		log.Println("listening on ", lis.Addr())
 		for {
 			if conn, err := lis.Accept(); err == nil {
-				// stream multiplex
-				conn.SetWindowSize(1024, 128)
-				scon := newSecureConn(c.String("key"), conn)
-				mux, err := yamux.Server(scon, nil)
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-				// handle multiplex-ed connection
-				go handleMux(mux, c.String("target"))
+				go handleMux(conn, c.String("key"), c.String("target"))
 			} else {
 				log.Println(err)
 			}
@@ -117,10 +104,28 @@ func main() {
 	myApp.Run(os.Args)
 }
 
-func handleMux(sess *yamux.Session, target string) {
-	defer sess.Close()
+// handle multiplex-ed connection
+func handleMux(conn *kcp.UDPSession, key, target string) {
+	conn.SetWindowSize(1024, 1024)
+	// read iv
+	iv := make([]byte, aes.BlockSize)
+	if _, err := io.ReadFull(conn, iv); err != nil {
+		log.Println(err)
+		conn.Close()
+		return
+	}
+
+	// stream multiplex
+	scon := newSecureConn(key, conn, iv)
+	mux, err := yamux.Server(scon, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer mux.Close()
+
 	for {
-		stream, err := sess.Accept()
+		stream, err := mux.Accept()
 		if err != nil {
 			log.Println(err)
 			return
