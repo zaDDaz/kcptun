@@ -128,6 +128,7 @@ func main() {
 		checkError(err)
 		log.Println("listening on:", listener.Addr())
 
+	START_KCP:
 		// kcp server
 		kcpserver, err := kcp.DialEncrypted(kcp.MODE_FAST, c.String("remoteaddr"), c.String("key"))
 		checkError(err)
@@ -152,9 +153,9 @@ func main() {
 				continue
 			}
 			p2, err := session.Open()
-			if err != nil {
+			if err != nil { // yamux failure
 				log.Println(err)
-				continue
+				goto START_KCP
 			}
 			go handleClient(p1, p2)
 		}
