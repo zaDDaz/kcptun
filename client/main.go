@@ -133,7 +133,6 @@ func main() {
 		kcpserver, err := kcp.DialEncrypted(kcp.MODE_FAST, c.String("remoteaddr"), c.String("key"))
 		checkError(err)
 		kcpserver.SetWindowSize(128, 1024)
-		defer kcpserver.Close()
 
 		// generate & send iv
 		iv := make([]byte, aes.BlockSize)
@@ -155,6 +154,7 @@ func main() {
 			p2, err := session.Open()
 			if err != nil { // yamux failure
 				log.Println(err)
+				kcpserver.Close()
 				goto START_KCP
 			}
 			go handleClient(p1, p2)
