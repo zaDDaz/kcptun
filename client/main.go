@@ -128,7 +128,7 @@ func main() {
 
 	START_KCP:
 		// kcp server
-		kcpconn, err := kcp.DialEncrypted(kcp.MODE_FAST, c.String("remoteaddr"), c.String("key"))
+		kcpconn, err := kcp.DialEncrypted(kcp.MODE_FAST, c.String("remoteaddr"), []byte(c.String("key")))
 		checkError(err)
 		kcpconn.SetWindowSize(128, 1024)
 
