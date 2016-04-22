@@ -62,6 +62,67 @@ func (sc *secureConn) Close() (err error) {
 	return sc.conn.Close()
 }
 
+// handle multiplex-ed connection
+func handleMux(conn *kcp.UDPSession, key, target string) {
+	conn.SetWindowSize(1024, 1024)
+	// read iv
+	iv := make([]byte, aes.BlockSize)
+	if _, err := io.ReadFull(conn, iv); err != nil {
+		log.Println(err)
+		conn.Close()
+		return
+	}
+
+	// stream multiplex
+	scon := newSecureConn(key, conn, iv)
+	mux, err := yamux.Server(scon, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer mux.Close()
+
+	for {
+		p1, err := mux.Accept()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		p2, err := net.Dial("tcp", target)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		go handleClient(p1, p2)
+	}
+}
+
+func handleClient(p1, p2 net.Conn) {
+	log.Println("stream opened")
+	defer log.Println("stream closed")
+	defer p1.Close()
+	defer p2.Close()
+
+	// start tunnel
+	p1die := make(chan struct{})
+	go func() {
+		io.Copy(p1, p2)
+		close(p1die)
+	}()
+
+	p2die := make(chan struct{})
+	go func() {
+		io.Copy(p2, p1)
+		close(p2die)
+	}()
+
+	// wait for tunnel termination
+	select {
+	case <-p1die:
+	case <-p2die:
+	}
+}
+
 func main() {
 	rand.Seed(int64(time.Now().Nanosecond()))
 	myApp := cli.NewApp()
@@ -102,66 +163,4 @@ func main() {
 		}
 	}
 	myApp.Run(os.Args)
-}
-
-// handle multiplex-ed connection
-func handleMux(conn *kcp.UDPSession, key, target string) {
-	conn.SetWindowSize(1024, 1024)
-	// read iv
-	iv := make([]byte, aes.BlockSize)
-	if _, err := io.ReadFull(conn, iv); err != nil {
-		log.Println(err)
-		conn.Close()
-		return
-	}
-
-	// stream multiplex
-	scon := newSecureConn(key, conn, iv)
-	mux, err := yamux.Server(scon, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer mux.Close()
-
-	for {
-		stream, err := mux.Accept()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		go handleClient(stream, target)
-	}
-}
-
-func handleClient(p1 net.Conn, target string) {
-	log.Println("stream opened")
-	defer log.Println("stream closed")
-
-	// p2
-	p2, err := net.Dial("tcp", target)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer p2.Close()
-
-	// start tunnel
-	p1die := make(chan struct{})
-	go func() {
-		io.Copy(p1, p2)
-		close(p1die)
-	}()
-
-	p2die := make(chan struct{})
-	go func() {
-		io.Copy(p2, p1)
-		close(p2die)
-	}()
-
-	// wait for tunnel termination
-	select {
-	case <-p1die:
-	case <-p2die:
-	}
 }
