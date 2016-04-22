@@ -72,15 +72,13 @@ func handleClient(p1, p2 net.Conn) {
 	// start tunnel
 	p1die := make(chan struct{})
 	go func() {
-		n, err := io.Copy(p1, p2)
-		log.Println("from p2 -> p1 written:", n, "error:", err)
+		io.Copy(p1, p2)
 		close(p1die)
 	}()
 
 	p2die := make(chan struct{})
 	go func() {
-		n, err := io.Copy(p2, p1)
-		log.Println("from p1 -> p2 written:", n, "error:", err)
+		io.Copy(p2, p1)
 		close(p2die)
 	}()
 
