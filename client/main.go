@@ -130,18 +130,18 @@ func main() {
 
 	START_KCP:
 		// kcp server
-		kcpserver, err := kcp.DialEncrypted(kcp.MODE_FAST, c.String("remoteaddr"), c.String("key"))
+		kcpconn, err := kcp.DialEncrypted(kcp.MODE_FAST, c.String("remoteaddr"), c.String("key"))
 		checkError(err)
-		kcpserver.SetWindowSize(128, 1024)
+		kcpconn.SetWindowSize(128, 1024)
 
 		// generate & send iv
 		iv := make([]byte, aes.BlockSize)
 		io.ReadFull(crand.Reader, iv)
-		_, err = kcpserver.Write(iv)
+		_, err = kcpconn.Write(iv)
 		checkError(err)
 
 		// stream multiplex
-		scon := newSecureConn(c.String("key"), kcpserver, iv)
+		scon := newSecureConn(c.String("key"), kcpconn, iv)
 		session, err := yamux.Client(scon, nil)
 		checkError(err)
 
@@ -154,7 +154,7 @@ func main() {
 			p2, err := session.Open()
 			if err != nil { // yamux failure
 				log.Println(err)
-				kcpserver.Close()
+				kcpconn.Close()
 				goto START_KCP
 			}
 			go handleClient(p1, p2)
