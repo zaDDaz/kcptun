@@ -24,7 +24,7 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 5. [PSK](https://en.wikipedia.org/wiki/Pre-shared_key)防止[MITM](https://en.wikipedia.org/wiki/Man-in-the-middle_attack)攻击       
 6. kcptun客户端和服务端分别只有一个main.go文件，易于使用      
 7. 核心基于[kcp-go](https://github.com/xtaci/kcp-go)      
-8. 基于[yamux](https://github.com/hashicorp/yamux) 的多路流复用( N:1 ------ > 1:N)
+8. 基于[yamux](https://github.com/hashicorp/yamux) 的多路流复用( N:1 <<------>> 1:N)
 
 加密流程：         
 ```
