@@ -20,7 +20,7 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 1. 超级快
 2. 采用高安全性[AES-256-CFB](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard)双重加密(包+流)             
 3. UDP数据包一次一密([OTP](https://en.wikipedia.org/wiki/One-time_password))，无特征，防非法深度检测       
-4. 消息摘要采用MD5，杜绝非法篡改      
+4. 消息摘要采用[MD5](https://en.wikipedia.org/wiki/MD5)，杜绝非法篡改      
 5. [PSK](https://en.wikipedia.org/wiki/Pre-shared_key)防止[MITM](https://en.wikipedia.org/wiki/Man-in-the-middle_attack)攻击       
 6. kcptun客户端和服务端分别只有一个main.go文件，易于使用      
 7. 核心基于[kcp-go](https://github.com/xtaci/kcp-go)      
