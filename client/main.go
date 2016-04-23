@@ -141,7 +141,7 @@ func main() {
 		case "fast":
 			mode = kcp.MODE_FAST
 		default:
-			log.Println("recognized mode:", c.String("mode"))
+			log.Println("unrecognized mode:", c.String("mode"))
 			return
 		}
 		log.Println("communication mode:", c.String("mode"))
