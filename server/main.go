@@ -162,7 +162,7 @@ func main() {
 		case "fast":
 			mode = kcp.MODE_FAST
 		default:
-			log.Println("unregonized mode:", c.String("mode"))
+			log.Println("recognized mode:", c.String("mode"))
 			return
 		}
 
