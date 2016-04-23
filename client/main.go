@@ -118,6 +118,11 @@ func main() {
 			Value: "it's a secrect",
 			Usage: "key for communcation, must be the same as kcptun server",
 		},
+		cli.StringFlag{
+			Name:  "mode",
+			Value: "fast",
+			Usage: "mode for communication: fast, normal, default",
+		},
 	}
 	myApp.Action = func(c *cli.Context) {
 		addr, err := net.ResolveTCPAddr("tcp", c.String("localaddr"))
@@ -127,8 +132,21 @@ func main() {
 		log.Println("listening on:", listener.Addr())
 
 	START_KCP:
+		var mode kcp.Mode
+		switch c.String("mode") {
+		case "normal":
+			mode = kcp.MODE_NORMAL
+		case "default":
+			mode = kcp.MODE_DEFAULT
+		case "fast":
+			mode = kcp.MODE_FAST
+		default:
+			log.Println("unregonized mode:", c.String("mode"))
+			return
+		}
+		log.Println("communication mode:", c.String("mode"))
 		// kcp server
-		kcpconn, err := kcp.DialEncrypted(kcp.MODE_FAST, c.String("remoteaddr"), []byte(c.String("key")))
+		kcpconn, err := kcp.DialEncrypted(mode, c.String("remoteaddr"), []byte(c.String("key")))
 		checkError(err)
 		kcpconn.SetWindowSize(128, 1024)
 
@@ -153,6 +171,7 @@ func main() {
 			if err != nil { // yamux failure
 				log.Println(err)
 				kcpconn.Close()
+				p1.Close()
 				goto START_KCP
 			}
 			go handleClient(p1, p2)

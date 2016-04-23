@@ -145,15 +145,33 @@ func main() {
 			Value: "it's a secrect",
 			Usage: "key for communcation, must be the same as kcptun client",
 		},
+		cli.StringFlag{
+			Name:  "mode",
+			Value: "fast",
+			Usage: "mode for communication: fast, normal, default",
+		},
 	}
 	myApp.Action = func(c *cli.Context) {
 		// KCP listen
-		lis, err := kcp.ListenEncrypted(kcp.MODE_FAST, c.String("listen"), []byte(c.String("key")))
+		var mode kcp.Mode
+		switch c.String("mode") {
+		case "normal":
+			mode = kcp.MODE_NORMAL
+		case "default":
+			mode = kcp.MODE_DEFAULT
+		case "fast":
+			mode = kcp.MODE_FAST
+		default:
+			log.Println("unregonized mode:", c.String("mode"))
+			return
+		}
+
+		lis, err := kcp.ListenEncrypted(mode, c.String("listen"), []byte(c.String("key")))
 		if err != nil {
 			log.Fatal(err)
 		}
-
 		log.Println("listening on ", lis.Addr())
+		log.Println("communication mode:", c.String("mode"))
 		for {
 			if conn, err := lis.Accept(); err == nil {
 				go handleMux(conn, c.String("key"), c.String("target"))
