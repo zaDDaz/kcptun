@@ -65,6 +65,7 @@ func (sc *secureConn) Close() (err error) {
 // handle multiplex-ed connection
 func handleMux(conn *kcp.UDPSession, key, target string) {
 	conn.SetWindowSize(1024, 1024)
+	conn.SetDeadline(time.Now().Add(2 * time.Second))
 	// read iv
 	iv := make([]byte, aes.BlockSize)
 	if _, err := io.ReadFull(conn, iv); err != nil {
@@ -72,6 +73,7 @@ func handleMux(conn *kcp.UDPSession, key, target string) {
 		conn.Close()
 		return
 	}
+	conn.SetDeadline(time.Time{})
 
 	// stream multiplex
 	scon := newSecureConn(key, conn, iv)
