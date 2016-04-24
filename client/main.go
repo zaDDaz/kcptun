@@ -148,6 +148,7 @@ func main() {
 		// kcp server
 		kcpconn, err := kcp.DialEncrypted(mode, c.String("remoteaddr"), []byte(c.String("key")))
 		checkError(err)
+		log.Println("remote address:", c.String("remoteaddr"))
 		kcpconn.SetWindowSize(128, 1024)
 
 		// generate & send iv

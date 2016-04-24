@@ -176,6 +176,7 @@ func main() {
 		log.Println("communication mode:", c.String("mode"))
 		for {
 			if conn, err := lis.Accept(); err == nil {
+				log.Println("remote address:", conn.RemoteAddr())
 				go handleMux(conn, c.String("key"), c.String("target"))
 			} else {
 				log.Println(err)
