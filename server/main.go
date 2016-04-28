@@ -154,9 +154,10 @@ func main() {
 			Usage: "target server addr",
 		},
 		cli.StringFlag{
-			Name:  "key",
-			Value: "it's a secrect",
-			Usage: "key for communcation, must be the same as kcptun client",
+			Name:   "key",
+			Value:  "it's a secrect",
+			Usage:  "key for communcation, must be the same as kcptun client",
+			EnvVar: "KCPTUN_KEY",
 		},
 		cli.StringFlag{
 			Name:  "mode",
