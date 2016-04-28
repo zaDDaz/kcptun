@@ -114,14 +114,19 @@ func main() {
 			Usage: "kcp server addr",
 		},
 		cli.StringFlag{
-			Name:  "key",
-			Value: "it's a secrect",
-			Usage: "key for communcation, must be the same as kcptun server",
+			Name:   "key",
+			Value:  "it's a secrect",
+			Usage:  "key for communcation, must be the same as kcptun server",
+			EnvVar: "KCPTUN_KEY",
 		},
 		cli.StringFlag{
 			Name:  "mode",
 			Value: "fast",
 			Usage: "mode for communication: fast, normal, default",
+		},
+		cli.BoolFlag{
+			Name:  "tuncrypt",
+			Usage: "enable tunnel encryption, useful for plaintext transfer",
 		},
 	}
 	myApp.Action = func(c *cli.Context) {
@@ -158,9 +163,18 @@ func main() {
 		checkError(err)
 
 		// stream multiplex
-		scon := newSecureConn(c.String("key"), kcpconn, iv)
-		session, err := yamux.Client(scon, nil)
-		checkError(err)
+		var mux *yamux.Session
+		if c.Bool("tuncrypt") {
+			scon := newSecureConn(c.String("key"), kcpconn, iv)
+			session, err := yamux.Client(scon, nil)
+			checkError(err)
+			mux = session
+		} else {
+			session, err := yamux.Client(kcpconn, nil)
+			checkError(err)
+			mux = session
+		}
+		log.Println("tunnel encryption:", c.Bool("tuncrypt"))
 
 		for {
 			p1, err := listener.AcceptTCP()
@@ -168,7 +182,7 @@ func main() {
 				log.Println(err)
 				continue
 			}
-			p2, err := session.Open()
+			p2, err := mux.Open()
 			if err != nil { // yamux failure
 				log.Println(err)
 				kcpconn.Close()

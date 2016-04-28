@@ -63,7 +63,7 @@ func (sc *secureConn) Close() (err error) {
 }
 
 // handle multiplex-ed connection
-func handleMux(conn *kcp.UDPSession, key, target string) {
+func handleMux(conn *kcp.UDPSession, key, target string, tuncrypt bool) {
 	conn.SetWindowSize(1024, 1024)
 	conn.SetDeadline(time.Now().Add(2 * time.Second))
 	// read iv
@@ -76,11 +76,22 @@ func handleMux(conn *kcp.UDPSession, key, target string) {
 	conn.SetDeadline(time.Time{})
 
 	// stream multiplex
-	scon := newSecureConn(key, conn, iv)
-	mux, err := yamux.Server(scon, nil)
-	if err != nil {
-		log.Println(err)
-		return
+	var mux *yamux.Session
+	if tuncrypt {
+		scon := newSecureConn(key, conn, iv)
+		m, err := yamux.Server(scon, nil)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		mux = m
+	} else {
+		m, err := yamux.Server(conn, nil)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		mux = m
 	}
 	defer mux.Close()
 
@@ -152,6 +163,10 @@ func main() {
 			Value: "fast",
 			Usage: "mode for communication: fast, normal, default",
 		},
+		cli.BoolFlag{
+			Name:  "tuncrypt",
+			Usage: "enable tunnel encryption, useful for plaintext transfer",
+		},
 	}
 	myApp.Action = func(c *cli.Context) {
 		// KCP listen
@@ -174,10 +189,11 @@ func main() {
 		}
 		log.Println("listening on ", lis.Addr())
 		log.Println("communication mode:", c.String("mode"))
+		log.Println("tunnel encryption:", c.Bool("tuncrypt"))
 		for {
 			if conn, err := lis.Accept(); err == nil {
 				log.Println("remote address:", conn.RemoteAddr())
-				go handleMux(conn, c.String("key"), c.String("target"))
+				go handleMux(conn, c.String("key"), c.String("target"), c.Bool("tuncrypt"))
 			} else {
 				log.Println(err)
 			}
