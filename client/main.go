@@ -101,7 +101,7 @@ func main() {
 	myApp := cli.NewApp()
 	myApp.Name = "kcptun"
 	myApp.Usage = "kcptun client"
-	myApp.Version = "1.0"
+	myApp.Version = "2.0"
 	myApp.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "localaddr,l",
@@ -126,7 +126,7 @@ func main() {
 		},
 		cli.BoolFlag{
 			Name:  "tuncrypt",
-			Usage: "enable tunnel encryption, useful for plaintext transfer",
+			Usage: "enable tunnel encryption, adds extra secrecy for data transfer",
 		},
 	}
 	myApp.Action = func(c *cli.Context) {
