@@ -16,6 +16,8 @@ import (
 	"github.com/xtaci/kcp-go"
 )
 
+var VERSION = "SELFBUILD"
+
 type secureConn struct {
 	encoder cipher.Stream
 	decoder cipher.Stream
@@ -141,7 +143,7 @@ func main() {
 	myApp := cli.NewApp()
 	myApp.Name = "kcptun"
 	myApp.Usage = "kcptun server"
-	myApp.Version = "2.0"
+	myApp.Version = VERSION
 	myApp.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "listen,l",
@@ -170,6 +172,7 @@ func main() {
 		},
 	}
 	myApp.Action = func(c *cli.Context) {
+		log.Println("version:", VERSION)
 		// KCP listen
 		var mode kcp.Mode
 		switch c.String("mode") {

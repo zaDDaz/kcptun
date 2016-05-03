@@ -17,6 +17,8 @@ import (
 	"github.com/xtaci/kcp-go"
 )
 
+var VERSION = "SELFBUILD"
+
 type secureConn struct {
 	encoder cipher.Stream
 	decoder cipher.Stream
@@ -101,7 +103,7 @@ func main() {
 	myApp := cli.NewApp()
 	myApp.Name = "kcptun"
 	myApp.Usage = "kcptun client"
-	myApp.Version = "2.0"
+	myApp.Version = VERSION
 	myApp.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "localaddr,l",
@@ -130,6 +132,7 @@ func main() {
 		},
 	}
 	myApp.Action = func(c *cli.Context) {
+		log.Println("version:", VERSION)
 		addr, err := net.ResolveTCPAddr("tcp", c.String("localaddr"))
 		checkError(err)
 		listener, err := net.ListenTCP("tcp", addr)
