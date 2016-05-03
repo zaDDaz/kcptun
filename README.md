@@ -17,9 +17,9 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 ***kcptun可以用于任意tcp网络程序的传输承载，可以极大的提高软件网络流畅度，降低掉线，连不上等情况。***   
 
 # 快速上手
-***注意，请确保默认服务器端UDP端口 ```29900``` 开启，防火墙允许UDP包通过。   (端口可以通过命令行参数调整，不要忘记修改对应的防火墙规则。)***
+***注意，请确保防火墙允许UDP包通过***
 
-点 [这里](https://github.com/xtaci/kcptun/releases/latest) 下载最新的对应平台的版本(***内含x86/x64/arm***)， 执行 client -h 和server -h 查看详细使用方法.        
+点 [这里下载](https://github.com/xtaci/kcptun/releases/latest) 最新的对应平台的版本(***内含x86/x64/arm***)， 执行 client -h 和server -h 查看详细使用方法.        
 我们以加速ssh -D访问为例示范使用方法如下：         
 
 1. 假定服务器IP为:```xxx.xxx.xxx.xxx```
