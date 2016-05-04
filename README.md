@@ -30,10 +30,10 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 ```ssh -D 127.0.0.1:8080 ubuntu@localhost```   
 
 3. 在服务器启动kcp server:     
-```server -t "127.0.0.1:8080"  ```   // 所有进入的数据包转发到sshd进程的socks 8080端口           
+```server -t "127.0.0.1:8080"  ```   // 所有接收到的数据包转发到sshd进程的socks 8080端口           
  ***_----------------------------  分割线，上面是服务器，下面是客户端  ----------------------------_***  
 4. 在本地(比如win10)启动kcp client:          
-```client -r "xxx.xxx.xxx.xxx:29900"   ```   // 连接到kcp server默认kcp server端口是29900           
+```client -r "xxx.xxx.xxx.xxx:29900"   ```   // 连接到kcp server，默认kcp server端口是29900           
 
 5.  将浏览器socks5代理设置为127.0.0.1:12948   // 默认kcp client的端口是12948           
 
