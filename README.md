@@ -87,7 +87,9 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 # 参数调整
 初步运行成功后，***强烈建议***通过命令行改变如下参数加强传输安全:         
 1. kcp server默认端口        
-2. 默认密码 ***必须修改*** 最好是字母数字大小写特殊字符的组合(前往 [密码生成](https://identitysafe.norton.com/password-generator/))        
+2. 默认密码 ***必须修改*** 最好是字母数字大小写特殊字符的组合(前往 [密码生成](https://identitysafe.norton.com/password-generator/))  
+3. 额外的隧道安全，可以通过 -tuncrypt 在server/client两端同时开启，即使PSK被猜到也难以破译                   
+
 例如:       
 ```server -tuncrypt -l ":41111" -key "yqRhM5T5"```       
 
