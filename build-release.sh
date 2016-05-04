@@ -7,9 +7,14 @@ OSES=(linux darwin windows)
 ARCHS=(amd64 386)
 for os in ${OSES[@]}; do
 	for arch in ${ARCHS[@]}; do
-		env GOOS=$os GOARCH=$arch go build -ldflags "$LDFLAGS" -o client_${os}_${arch} github.com/xtaci/kcptun/client
-		env GOOS=$os GOARCH=$arch go build -ldflags "$LDFLAGS" -o server_${os}_${arch} github.com/xtaci/kcptun/server
-		tar -zcf kcptun-${os}-${arch}-$VERSION.tar.gz client_${os}_${arch} server_${os}_${arch}
+		suffix=""
+		if [ "$os" == "windows" ]
+		then
+			suffix=".exe"
+		fi
+		env GOOS=$os GOARCH=$arch go build -ldflags "$LDFLAGS" -o client_${os}_${arch}${suffix} github.com/xtaci/kcptun/client
+		env GOOS=$os GOARCH=$arch go build -ldflags "$LDFLAGS" -o server_${os}_${arch}${suffix} github.com/xtaci/kcptun/server
+		tar -zcf kcptun-${os}-${arch}-$VERSION.tar.gz client_${os}_${arch}${suffix} server_${os}_${arch}${suffix}
 		md5 kcptun-${os}-${arch}-$VERSION.tar.gz
 	done
 done
