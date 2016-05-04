@@ -19,23 +19,25 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 # 快速上手
 ***注意，请确保防火墙允许UDP包通过***
 
-点 [这里下载](https://github.com/xtaci/kcptun/releases/latest) 最新的对应平台的版本(***内含x86/x64/arm***)， 执行 client -h 和server -h 查看详细使用方法.        
+点 [这里下载](https://github.com/xtaci/kcptun/releases/latest) 最新的对应平台的版本(***内含x86/x64/arm***)。         
+执行 client -h 和server -h 查看详细使用方法.  不同平台分别为client_windows_amd64.exe或server_linux_amd64这种平台对应文件名。
+
 我们以加速ssh -D访问为例示范使用方法如下：         
 
-1. 假定服务器IP为:```xxx.xxx.xxx.xxx```
+1. 假定服务器（比如ubuntu) IP地址为:```xxx.xxx.xxx.xxx```
 
-2. 在服务器端开启ssh -D     (监听127.0.0.1:8080端口，***或者你可以在服务器端启动任意的socks代理监听127.0.0.1:8080*** )        
+2. 在服务器端开启ssh -D, 监听127.0.0.1:8080端口，***或者你可以在服务器端启动任意的socks代理监听127.0.0.1:8080***         
 ```ssh -D 127.0.0.1:8080 ubuntu@localhost```   
 
 3. 在服务器启动kcp server:     
-```server -t "127.0.0.1:8080"  ```     // 所有数据包转发到sshd进程的socks 8080端口           
-
+```server -t "127.0.0.1:8080"  ```   // 所有接收到的数据包转发到sshd进程的socks 8080端口           
  ***_----------------------------  分割线，上面是服务器，下面是客户端  ----------------------------_***  
-4. 在本地启动kcp client:          
-```client -r "xxx.xxx.xxx.xxx:29900"   ```    // 连接到kcp server，默认kcp server端口是29900           
+4. 在本地(比如win10)启动kcp client:          
+```client -r "xxx.xxx.xxx.xxx:29900"   ```   // 连接到kcp server，默认kcp server端口是29900           
 
-5. 浏览器就可以连接127.0.0.1:12948端口进行socks5代理访问了。   // 默认kcp client的端口是12948           
-***转发过程为 浏览器 -> kcp-client(:12948) -> kcp-server(:29900) -> ssh -D(:8080)***
+5.  将浏览器socks5代理设置为127.0.0.1:12948   // 默认kcp client的端口是12948           
+
+***完整转发过程为: 浏览器 -> kcp-client(:12948) -> kcp-server(:29900) -> ssh -D(:8080)***
 
 # 特性      
 1. 超级快     
@@ -84,10 +86,12 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 
 # 参数调整
 初步运行成功后，***强烈建议***通过命令行改变如下参数加强传输安全:         
-1. 默认端口        
-2. 默认密码 ***必须修改*** 最好是字母数字大小写特殊字符的组合(前往 [密码生成](https://identitysafe.norton.com/password-generator/))        
+1. kcp server默认端口        
+2. 默认密码 ***必须修改*** 最好是字母数字大小写特殊字符的组合(前往 [密码生成](https://identitysafe.norton.com/password-generator/))  
+3. 额外的隧道安全，可以通过 -tuncrypt 在server/client两端同时开启，即使PSK被猜到也难以破译                   
+
 例如:       
-```server -l ":41111" -key "yqRhM5T5"```       
+```server -tuncrypt -l ":41111" -key "yqRhM5T5"```       
 
 # 从源码的安装
 ## 预备条件:       
@@ -107,9 +111,6 @@ A: 某些IDC默认屏蔽了UDP协议，需要在防火墙中打开对应的端�
 
 Q: 出现不明原因降速严重，可能有50%丢包         
 A: 可能该端口被运营商限制，更换一个端口就能解决
-
-另外，一些比较有代表性的issue可以参考:         
-https://github.com/xtaci/kcptun/issues/2
 
 # 免责申明
 用户以各种方式使用本软件（包括但不限于修改使用、直接使用、通过第三方使用）的过程中，不得以任何方式利用本软件直接或间接从事违反中国法律、以及社会公德的行为。         
