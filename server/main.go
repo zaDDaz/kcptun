@@ -66,6 +66,7 @@ func (sc *secureConn) Close() (err error) {
 
 // handle multiplex-ed connection
 func handleMux(conn *kcp.UDPSession, key, target string, tuncrypt bool) {
+	conn.SetRetries(50)
 	conn.SetWindowSize(1024, 1024)
 	conn.SetDeadline(time.Now().Add(2 * time.Second))
 	// read iv

@@ -156,6 +156,7 @@ func main() {
 		// kcp server
 		kcpconn, err := kcp.DialEncrypted(mode, c.String("remoteaddr"), []byte(c.String("key")))
 		checkError(err)
+		kcpconn.SetRetries(50)
 		log.Println("remote address:", c.String("remoteaddr"))
 		kcpconn.SetWindowSize(128, 1024)
 
