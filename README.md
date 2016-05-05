@@ -20,11 +20,11 @@ TCP流转换为KCP+UDP流，用于***高丢包***环境中的数据传输，工�
 ***注意，请确保防火墙允许UDP包通过***
 
 点 [这里下载](https://github.com/xtaci/kcptun/releases/latest) 最新的对应平台的版本(***内含x86/x64/arm***)。         
-执行 client -h 和server -h 查看详细使用方法.  不同平台分别为```client_windows_amd64.exe或server_linux_amd64```这种平台对应文件名。
+执行 ```client -h 和server -h``` 查看详细使用方法.  不同平台分别为```client_windows_amd64.exe或server_linux_amd64```这种平台对应文件名。
 
 我们以加速ssh -D访问为例示范使用方法如下：         
 
-1. 假定服务器（比如ubuntu) IP地址为:```xxx.xxx.xxx.xxx```
+1. 假定服务器(比如ubuntu) IP地址为:```xxx.xxx.xxx.xxx```
 
 2. 在服务器端开启ssh -D, 监听127.0.0.1:8080端口，***或者你可以在服务器端启动任意的socks代理监听127.0.0.1:8080***         
 ```ssh -D 127.0.0.1:8080 ubuntu@localhost```   
