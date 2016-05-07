@@ -35,7 +35,7 @@ func newSecureConn(key string, conn net.Conn, iv []byte) *secureConn {
 		log.Println(err)
 		return nil
 	}
-	sc.encoder = cipher.NewCFBEncrypter(block, iv)
+	sc.encoder = cipher.NewCFBEncrypter(block, iv[aes.BlockSize:])
 
 	// decoder
 	block, err = aes.NewCipher(commkey[:])
@@ -43,7 +43,7 @@ func newSecureConn(key string, conn net.Conn, iv []byte) *secureConn {
 		log.Println(err)
 		return nil
 	}
-	sc.decoder = cipher.NewCFBDecrypter(block, iv)
+	sc.decoder = cipher.NewCFBDecrypter(block, iv[:aes.BlockSize])
 	return sc
 }
 
@@ -70,7 +70,7 @@ func handleMux(conn *kcp.UDPSession, key, target string, tuncrypt bool) {
 	conn.SetWindowSize(1024, 1024)
 	conn.SetDeadline(time.Now().Add(2 * time.Second))
 	// read iv
-	iv := make([]byte, aes.BlockSize)
+	iv := make([]byte, 2*aes.BlockSize)
 	if _, err := io.ReadFull(conn, iv); err != nil {
 		log.Println(err)
 		conn.Close()

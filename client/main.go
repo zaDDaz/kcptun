@@ -36,7 +36,7 @@ func newSecureConn(key string, conn net.Conn, iv []byte) *secureConn {
 		log.Println(err)
 		return nil
 	}
-	sc.encoder = cipher.NewCFBEncrypter(block, iv)
+	sc.encoder = cipher.NewCFBEncrypter(block, iv[:aes.BlockSize])
 
 	// decoder
 	block, err = aes.NewCipher(commkey[:])
@@ -44,7 +44,7 @@ func newSecureConn(key string, conn net.Conn, iv []byte) *secureConn {
 		log.Println(err)
 		return nil
 	}
-	sc.decoder = cipher.NewCFBDecrypter(block, iv)
+	sc.decoder = cipher.NewCFBDecrypter(block, iv[aes.BlockSize:])
 	return sc
 }
 
@@ -161,7 +161,7 @@ func main() {
 		kcpconn.SetWindowSize(128, 1024)
 
 		// generate & send iv
-		iv := make([]byte, aes.BlockSize)
+		iv := make([]byte, 2*aes.BlockSize)
 		io.ReadFull(crand.Reader, iv)
 		_, err = kcpconn.Write(iv)
 		checkError(err)
